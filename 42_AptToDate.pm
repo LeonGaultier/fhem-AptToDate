@@ -49,7 +49,7 @@ eval "use JSON;1" or $missingModul .= "JSON ";
 
 
 
-my $version = "0.0.64";
+my $version = "0.1.6";
 
 
 
@@ -482,13 +482,10 @@ sub AptToDate_GetDistribution() {
             if($line =~ m#^LANG=([a-z]+).*$#) {
                 $update->{'os-release'}{'os-release_language'}  = $1;
                 Log3 'Update', 4, "Language Daten erhalten"
-            
-            } else {
-                $update->{'os-release'}{'os-release_language'}  = 'en';
-                Log3 'Update', 4, "alternative Language Daten"
             }
         }
-
+        
+        $update->{'os-release'}{'os-release_language'}  = 'en' if( not defined($update->{'os-release'}{'os-release_language'}) );
         close(LOCALE);
     } else {
         die Log3 'Update', 2, "Couldn't use LOCALE: $!";
