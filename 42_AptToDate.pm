@@ -49,7 +49,7 @@ eval "use JSON;1" or $missingModul .= "JSON ";
 
 
 
-my $version = "0.0.50";
+my $version = "0.0.60";
 
 
 
@@ -107,7 +107,7 @@ sub AptToDate_Initialize($) {
 
     foreach my $d(sort keys %{$modules{AptToDate}{defptr}}) {
         my $hash = $modules{AptToDate}{defptr}{$d};
-        $hash->{VERSION} 	= $version;
+        $hash->{VERSION}    = $version;
     }
 }
 
@@ -829,15 +829,67 @@ sub AptToDate_ToDay() {
 
 =pod
 =item device
-=item summary       
-=item summary_DE    
+=item summary       Modul to retrieves apt information about Debian update state
+=item summary_DE    Modul um apt Updateinformationen von Debian Systemen zu bekommen
 
 =begin html
 
 <a name="AptToDate"></a>
 <h3>Apt Update Information</h3>
 <ul>
-
+  <u><b>AptToDate - Retrieves apt information about Debian update state state</b></u>
+  <br>
+  With this module it is possible to read the apt update information from a Debian System.</br>
+  It's required to insert "fhem    ALL=NOPASSWD:   /usr/bin/apt-get" via "visudo".
+  <br><br>
+  <a name="AptToDatedefine"></a>
+  <b>Define</b>
+  <ul><br>
+    <code>define &lt;name&gt; AptToDate &lt;HOST&gt;</code>
+    <br><br>
+    Example:
+    <ul><br>
+      <code>define fhemServer AptToDate localhost</code><br>
+    </ul>
+    <br>
+    This statement creates a AptToDate Device with the name fhemServer and the Host localhost.<br>
+    After the device has been created the Modul is fetch all information about update state. This will need a moment.
+  </ul>
+  <br><br>
+  <a name="AptToDatereadings"></a>
+  <b>Readings</b>
+  <ul>
+    <li>state - update status about the server</li>
+    <li>os-release_ - all information from /etc/os-release</li>
+    <li>repoSync - status about last repository sync.</li>
+    <li>toUpgrade - status about last upgrade</li>
+    <li>updatesAvailable - number of available updates</li>
+  </ul>
+  <br><br>
+  <a name="AptToDateset"></a>
+  <b>Set</b>
+  <ul>
+    <li>repoSync - fetch information about update state</li>
+    <li>toUpgrade - to run update process. this will take a moment</li>
+    <br>
+  </ul>
+  <br><br>
+  <a name="AptToDateget"></a>
+  <b>Get</b>
+  <ul>
+    <li>showUpgradeList - list about available updates</li>
+    <li>showUpdatedList - list about updated packages, from old version to new version</li>
+    <li>showWarningList - list of all last warnings</li>
+    <li>showErrorList - list of all last errors</li>
+    <br>
+  </ul>
+  <br><br>
+  <a name="AptToDate attribut"></a>
+  <b>Attributes</b>
+  <ul>
+    <li>disable - disables the device</li>
+    <li>disabledForIntervals - disable device for interval time (13:00-18:30 or 13:00-18:30 22:00-23:00)</li>
+  </ul>
 </ul>
 
 =end html
@@ -847,7 +899,60 @@ sub AptToDate_ToDay() {
 <a name="AptToDate"></a>
 <h3>Apt Update Information</h3>
 <ul>
-
+  <u><b>AptToDate - Stellt aktuelle Update Informationen von apt Debian Systemen bereit</b></u>
+  <br>
+  Das Modul synct alle Repositotys und stellt dann Informationen &uuml;ber zu aktualisierende Packete bereit.</br>
+  Es ist Voraussetzung das folgende Zeile via "visudo" eingef&uuml;gt wird: "fhem    ALL=NOPASSWD:   /usr/bin/apt-get".
+  <br><br>
+  <a name="AptToDatedefine"></a>
+  <b>Define</b>
+  <ul><br>
+    <code>define &lt;name&gt; AptToDate &lt;HOST&gt;</code>
+    <br><br>
+    Beispiel:
+    <ul><br>
+      <code>define fhemServer AptToDate localhost</code><br>
+    </ul>
+    <br>
+    Der Befehl erstellt eine AptToDate Instanz mit dem Namen fhemServer und dem Host localhost.<br>
+    Nachdem die Instanz erstellt wurde werden die ben&ouml;tigten Informationen geholt und als Readings angezeigt.
+    Dies kann einen Moment dauern.
+  </ul>
+  <br><br>
+  <a name="AptToDatereadings"></a>
+  <b>Readings</b>
+  <ul>
+    <li>state - update Status des Servers, liegen neue Updates an oder nicht</li>
+    <li>os-release_ - alle Informationen aus /etc/os-release</li>
+    <li>repoSync - status des letzten repository sync.</li>
+    <li>toUpgrade - status des letzten upgrade Befehles</li>
+    <li>updatesAvailable - Anzahl der verf&uuml;gbaren Paketupdates</li>
+  </ul>
+  <br><br>
+  <a name="AptToDateset"></a>
+  <b>Set</b>
+  <ul>
+    <li>repoSync - holt aktuelle Informationen &uuml;ber den Updatestatus</li>
+    <li>toUpgrade - f&uuml;hrt den upgrade prozess aus.</li>
+    <br>
+  </ul>
+  <br><br>
+  <a name="AptToDateget"></a>
+  <b>Get</b>
+  <ul>
+    <li>showUpgradeList - Paketiste aller zur Verf&uuml;gung stehender Updates</li>
+    <li>showUpdatedList - Liste aller als letztes aktualisierter Pakete, von der alten Version zur neuen Version</li>
+    <li>showWarningList - Liste der letzten Warnings</li>
+    <li>showErrorList - Liste der letzten Fehler</li>
+    <br>
+  </ul>
+  <br><br>
+  <a name="AptToDate attribut"></a>
+  <b>Attributes</b>
+  <ul>
+    <li>disable - Deaktiviert das Device</li>
+    <li>disabledForIntervals - Deaktiviert das Device f&uuml;r eine bestimmte Zeit (13:00-18:30 or 13:00-18:30 22:00-23:00)</li>
+  </ul>
 </ul>
 
 =end html_DE
