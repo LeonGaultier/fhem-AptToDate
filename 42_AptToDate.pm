@@ -49,7 +49,7 @@ eval "use JSON;1" or $missingModul .= "JSON ";
 
 
 
-my $version = "0.0.62";
+my $version = "0.0.64";
 
 
 
@@ -457,6 +457,7 @@ sub AptToDate_GetDistribution() {
 
     if(open(DISTRI, "</etc/os-release")) {
         while (my $line = <DISTRI>) {
+        
             chomp($line);
             Log3 'AptToDate', 4, "Sub AptToDate_GetDistribution - $line";
             if($line =~ m#^(.*)="?(.*)"$#i or $line =~ m#^(.*)=([a-z]+)$#i) {
@@ -465,15 +466,15 @@ sub AptToDate_GetDistribution() {
             }
         }
         
-        close(APT);
+        close(DISTRI);
     } else {
-        die Log3 'Update', 2, "Couldn't use APT: $!";
-        #die "Couldn't use APT: $!\n";
-        $update->{error}    = 'Couldn\'t use APT: '.$;
+        die Log3 'Update', 2, "Couldn't use DISTRI: $!";
+        #die "Couldn't use DISTRI: $!\n";
+        $update->{error}    = 'Couldn\'t use DISTRI: '.$;
     }
     
-    if(open(APT, "echo n | locale 2>&1 |")) {
-        while(my $line = <APT>) {
+    if(open(LOCALE, "locale 2>&1 |")) {
+        while(my $line = <LOCALE>) {
         
             chomp($line);
             Log3 'AptToDate', 4, "Sub AptToDate_GetDistribution - $line";
@@ -482,12 +483,12 @@ sub AptToDate_GetDistribution() {
                 Log3 'Update', 4, "Language Daten erhalten"
             }
         }
-        
-        close(APT);
+
+        close(LOCALE);
     } else {
-        die Log3 'Update', 2, "Couldn't use APT: $!";
+        die Log3 'Update', 2, "Couldn't use LOCALE: $!";
         #die "Couldn't use APT: $!\n";
-        $update->{error}    = 'Couldn\'t use APT: '.$;
+        $update->{error}    = 'Couldn\'t use LOCALE: '.$;
     }
 
     return $update;
