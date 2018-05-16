@@ -215,12 +215,8 @@ sub AptToDate_Notify($$) {
             or grep /^os-release_language:.(de|en)$/,@{$events} ) {
 
         if( ReadingsVal($name,'os-release_language','none') ne 'none' ) {
-            if( ReadingsVal($name,'os-release_language','none') eq 'de' or ReadingsVal($name,'os-release_language','none') eq 'en' ) {
-                AptToDate_ProcessUpdateTimer($hash);
-            } else {
-                readingsSingleUpdate($hash,"state","language not supported", 1);
-                Log3 $name, 2, "AptToDate ($name) - sorry, your systems language is not supported";
-            }
+            AptToDate_ProcessUpdateTimer($hash);
+            
         } else {
             $hash->{".fhem"}{aptget}{cmd}   = 'getDistribution';
             AptToDate_AsynchronousExecuteAptGetCommand($hash);
@@ -324,19 +320,24 @@ sub AptToDate_ProcessUpdateTimer($) {
     InternalTimer( gettimeofday()+14400, "AptToDate_ProcessUpdateTimer", $hash,0 );
     Log3 $name, 4, "AptToDate ($name) - stateRequestTimer: Call Request Timer";
 
-    if( !IsDisabled($name) ) {
-        if(exists($hash->{".fhem"}{subprocess})) {
-            Log3 $name, 2, "AptToDate ($name) - update in progress, process aborted.";
-            return 0;
-        }
+    if( ReadingsVal($name,'os-release_language','none') eq 'de' or ReadingsVal($name,'os-release_language','none') eq 'en' ) {
+        if( !IsDisabled($name) ) {
+            if(exists($hash->{".fhem"}{subprocess})) {
+                Log3 $name, 2, "AptToDate ($name) - update in progress, process aborted.";
+                return 0;
+            }
         
-        readingsSingleUpdate($hash,"state","ready", 1) if( ReadingsVal($name,'state','none') eq 'none' or ReadingsVal($name,'state','none') eq 'initialized' );
-        
-        if( AptToDate_ToDay() ne (split(' ',ReadingsTimestamp($name,'repoSync','1970-01-01')))[0]) {
-            $hash->{".fhem"}{aptget}{cmd}   = 'repoSync';
-            AptToDate_AsynchronousExecuteAptGetCommand($hash);
+            readingsSingleUpdate($hash,"state","ready", 1) if( ReadingsVal($name,'state','none') eq 'none' or ReadingsVal($name,'state','none') eq 'initialized' );
+            
+            if( AptToDate_ToDay() ne (split(' ',ReadingsTimestamp($name,'repoSync','1970-01-01')))[0]) {
+                $hash->{".fhem"}{aptget}{cmd}   = 'repoSync';
+                AptToDate_AsynchronousExecuteAptGetCommand($hash);
+            }
         }
-    }
+    } else {
+        readingsSingleUpdate($hash,"state","language not supported", 1);
+        Log3 $name, 2, "AptToDate ($name) - sorry, your systems language is not supported";
+    }  
 }
 
 sub AptToDate_CleanSubprocess($) {
@@ -370,14 +371,14 @@ sub AptToDate_AsynchronousExecuteAptGetCommand($) {
     
     
     if(!defined($pid)) {
-        Log3 $name, 1, "AptToDate ($name) - Cannot execute apt-get command asynchronously";
+        Log3 $name, 1, "AptToDate ($name) - Cannot execute command asynchronously";
 
         AptToDate_CleanSubprocess($hash);
-        readingsSingleUpdate($hash,'state','Cannot execute apt-get command asynchronously', 1);
+        readingsSingleUpdate($hash,'state','Cannot execute command asynchronously', 1);
         return undef;
     }
 
-    Log3 $name, 4, "AptToDate ($name) - execute apt-get command asynchronously (PID= $pid)";
+    Log3 $name, 4, "AptToDate ($name) - execute command asynchronously (PID= $pid)";
     
     $hash->{".fhem"}{subprocess}    = $subprocess;
     
@@ -481,6 +482,10 @@ sub AptToDate_GetDistribution() {
             if($line =~ m#^LANG=([a-z]+).*$#) {
                 $update->{'os-release'}{'os-release_language'}  = $1;
                 Log3 'Update', 4, "Language Daten erhalten"
+            
+            } else {
+                $update->{'os-release'}{'os-release_language'}  = 'en';
+                Log3 'Update', 4, "alternative Language Daten"
             }
         }
 
