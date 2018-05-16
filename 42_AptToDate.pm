@@ -49,7 +49,7 @@ eval "use JSON;1" or $missingModul .= "JSON ";
 
 
 
-my $version = "0.0.61";
+my $version = "0.0.62";
 
 
 
@@ -260,8 +260,13 @@ sub AptToDate_Set($$@) {
         return "Unknown argument $cmd, choose one of $list";
     }
     
-    AptToDate_AsynchronousExecuteAptGetCommand($hash);
-    
+    if( ReadingsVal($name,'os-release_language','none') eq 'de' or ReadingsVal($name,'os-release_language','none') eq 'en' ) {
+        AptToDate_AsynchronousExecuteAptGetCommand($hash);
+    } else {
+        readingsSingleUpdate($hash,"state","language not supported", 1);
+        Log3 $name, 2, "AptToDate ($name) - sorry, your systems language is not supported";
+    }
+
     return undef;
 }
 
