@@ -49,7 +49,7 @@ eval "use JSON;1" or $missingModul .= "JSON ";
 
 
 
-my $version = "0.0.60";
+my $version = "0.0.61";
 
 
 
@@ -215,8 +215,12 @@ sub AptToDate_Notify($$) {
             or grep /^os-release_language:.(de|en)$/,@{$events} ) {
 
         if( ReadingsVal($name,'os-release_language','none') ne 'none' ) {
-            AptToDate_ProcessUpdateTimer($hash);
-        
+            if( ReadingsVal($name,'os-release_language','none') eq 'de' or ReadingsVal($name,'os-release_language','none') eq 'en' ) {
+                AptToDate_ProcessUpdateTimer($hash);
+            } else {
+                readingsSingleUpdate($hash,"state","language not supported", 1);
+                Log3 $name, 2, "AptToDate ($name) - sorry, your systems language is not supported";
+            }
         } else {
             $hash->{".fhem"}{aptget}{cmd}   = 'getDistribution';
             AptToDate_AsynchronousExecuteAptGetCommand($hash);
