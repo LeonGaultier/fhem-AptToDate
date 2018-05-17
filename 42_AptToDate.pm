@@ -49,7 +49,7 @@ eval "use JSON;1" or $missingModul .= "JSON ";
 
 
 
-my $version = "0.1.6";
+my $version = "0.2.0";
 
 
 
@@ -68,7 +68,7 @@ sub AptToDate_AsynchronousExecuteAptGetCommand($);
 sub AptToDate_OnRun();
 sub AptToDate_PollChild($);
 sub AptToDate_ExecuteAptGetCommand($);
-sub AptToDate_GetDistribution();
+sub AptToDate_GetDistribution($);
 sub AptToDate_AptUpdate($);
 sub AptToDate_AptUpgradeList($);
 sub AptToDate_AptToUpgrade($);
@@ -365,6 +365,7 @@ sub AptToDate_AsynchronousExecuteAptGetCommand($) {
 
     my $subprocess                  = SubProcess->new({ onRun => \&AptToDate_OnRun });
     $subprocess->{aptget}           = $hash->{".fhem"}{aptget};
+    $subprocess->{aptget}{host}     = $hash->{HOST};
     my $pid                         = $subprocess->run();
 
     readingsSingleUpdate($hash,'state',$hash->{".fhem"}{aptget}{cmd}.' in progress', 1);
@@ -416,10 +417,10 @@ sub AptToDate_PollChild($) {
 sub AptToDate_OnRun() {
 
     my $subprocess  = shift;
-    
-    
+
+
     my $response    = AptToDate_ExecuteAptGetCommand($subprocess->{aptget});
-    
+
     my $json        = eval{encode_json($response)};
     if($@){
         Log3 'AptToDate OnRun', 3, "AptToDate - JSON error: $@";
@@ -432,10 +433,28 @@ sub AptToDate_OnRun() {
 sub AptToDate_ExecuteAptGetCommand($) {
 
     my $aptget              = shift;
-    
 
-    my $apt                 = { 'aptget' => 'sudo apt-get' };
+
+    my $apt                 = { };
     $apt->{lang}            = $aptget->{lang};
+    
+    if( $aptget->{host} ne 'localhost' ) {
+        
+        $apt->{aptgetupdate}    = 'ssh '.$aptget->{host}.' echo n | sudo apt-get -q update';
+        $apt->{distri}          = 'ssh '.$aptget->{host}.' cat /etc/os-release |';
+        $apt->{'locale'}        = 'ssh '.$aptget->{host}.' locale';
+        $apt->{aptgetupgrade}   = 'ssh '.$aptget->{host}.' echo n | sudo apt-get -s -q -V upgrade';
+        $apt->{aptgettoupgrade} = 'ssh '.$aptget->{host}.' echo n | sudo apt-get -y -q -V upgrade';
+
+    } else {
+    
+        $apt->{aptgetupdate}    = 'echo n | sudo apt-get -q update';
+        $apt->{distri}          = '</etc/os-release';
+        $apt->{'locale'}        = 'locale';
+        $apt->{aptgetupgrade}   = 'echo n | sudo apt-get -s -q -V upgrade';
+        $apt->{aptgettoupgrade} = 'echo n | sudo apt-get -y -q -V upgrade';
+    }
+    
     my $response;
     
     if( $aptget->{cmd} eq 'repoSync' ) {
@@ -443,7 +462,7 @@ sub AptToDate_ExecuteAptGetCommand($) {
     } elsif( $aptget->{cmd} eq 'getUpdateList' ) {
         $response    = AptToDate_AptUpgradeList($apt);
     } elsif( $aptget->{cmd} eq 'getDistribution' ) {
-        $response    = AptToDate_GetDistribution();
+        $response    = AptToDate_GetDistribution($apt);
     } elsif( $aptget->{cmd} eq 'toUpgrade' ) {
         $response    = AptToDate_AptToUpgrade($apt);
     }
@@ -451,12 +470,14 @@ sub AptToDate_ExecuteAptGetCommand($) {
     return $response;
 }
 
-sub AptToDate_GetDistribution() {
+sub AptToDate_GetDistribution($) {
 
+    my $apt     = shift;
+    
+    
     my $update  = {};
 
-
-    if(open(DISTRI, "</etc/os-release")) {
+    if(open(DISTRI, "$apt->{distri}")) {
         while (my $line = <DISTRI>) {
         
             chomp($line);
@@ -474,7 +495,7 @@ sub AptToDate_GetDistribution() {
         $update->{error}    = 'Couldn\'t use DISTRI: '.$;
     }
     
-    if(open(LOCALE, "locale 2>&1 |")) {
+    if(open(LOCALE, "$apt->{'locale'} 2>&1 |")) {
         while(my $line = <LOCALE>) {
         
             chomp($line);
@@ -503,7 +524,7 @@ sub AptToDate_AptUpdate($) {
     
     my $update  = {};
 
-    if(open(APT, "echo n | $apt->{aptget} -q update 2>&1 | ")) {
+    if(open(APT, "$apt->{aptgetupdate} 2>&1 | ")) {
         while (my $line = <APT>) {
             chomp($line);
             Log3 'AptToDate', 4, "Sub AptToDate_AptUpdate - $line";
@@ -544,7 +565,7 @@ sub AptToDate_AptUpgradeList($) {
     
     my $updates = {};
 
-    if(open(APT, "echo n | $apt->{aptget} -s -q -V upgrade 2>&1 |")) {
+    if(open(APT, "$apt->{aptgetupgrade} 2>&1 |")) {
         while(my $line = <APT>) {
             chomp($line);
             Log3 'AptToDate', 4, "Sub AptToDate_AptUpgradeList - $line";
@@ -585,7 +606,7 @@ sub AptToDate_AptToUpgrade($) {
     
     my $updates = {};
 
-    if(open(APT, "echo n | $apt->{aptget} -y -q -V upgrade 2>&1 |")) {
+    if(open(APT, "$apt->{aptgettoupgrade} 2>&1 |")) {
         while(my $line = <APT>) {
             chomp($line);
             Log3 'AptToDate', 4, "Sub AptToDate_AptToUpgrade - $line";
