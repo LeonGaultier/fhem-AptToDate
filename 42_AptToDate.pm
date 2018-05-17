@@ -49,7 +49,7 @@ eval "use JSON;1" or $missingModul .= "JSON ";
 
 
 
-my $version = "0.2.0";
+my $version = "0.2.1";
 
 
 
@@ -440,11 +440,11 @@ sub AptToDate_ExecuteAptGetCommand($) {
     
     if( $aptget->{host} ne 'localhost' ) {
         
-        $apt->{aptgetupdate}    = 'ssh '.$aptget->{host}.' echo n | sudo apt-get -q update';
+        $apt->{aptgetupdate}    = 'ssh '.$aptget->{host}.' \'echo n | sudo apt-get -q update\'';
         $apt->{distri}          = 'ssh '.$aptget->{host}.' cat /etc/os-release |';
         $apt->{'locale'}        = 'ssh '.$aptget->{host}.' locale';
-        $apt->{aptgetupgrade}   = 'ssh '.$aptget->{host}.' echo n | sudo apt-get -s -q -V upgrade';
-        $apt->{aptgettoupgrade} = 'ssh '.$aptget->{host}.' echo n | sudo apt-get -y -q -V upgrade';
+        $apt->{aptgetupgrade}   = 'ssh '.$aptget->{host}.' \'echo n | sudo apt-get -s -q -V upgrade\'';
+        $apt->{aptgettoupgrade} = 'ssh '.$aptget->{host}.' \'echo n | sudo apt-get -y -q -V upgrade\'';
 
     } else {
     
@@ -806,7 +806,7 @@ sub AptToDate_CreateErrorList($) {
     my $ret = '<html><table><tr><td>';
     $ret .= '<table class="block wide">';
     $ret .= '<tr class="even">';
-    $ret .= "<td><b>Warning List</b></td>";
+    $ret .= "<td><b>Error List</b></td>";
     $ret .= "<td></td>";
     $ret .= '</tr>';
     
