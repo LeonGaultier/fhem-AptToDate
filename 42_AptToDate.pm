@@ -49,7 +49,7 @@ eval "use JSON;1" or $missingModul .= "JSON ";
 
 
 
-my $version = "0.2.1";
+my $version = "0.2.2";
 
 
 
@@ -366,6 +366,7 @@ sub AptToDate_AsynchronousExecuteAptGetCommand($) {
     my $subprocess                  = SubProcess->new({ onRun => \&AptToDate_OnRun });
     $subprocess->{aptget}           = $hash->{".fhem"}{aptget};
     $subprocess->{aptget}{host}     = $hash->{HOST};
+    $subprocess->{aptget}{debug}    = 1 if( AttrVal($name,'verbose',0) > 3 );
     my $pid                         = $subprocess->run();
 
     readingsSingleUpdate($hash,'state',$hash->{".fhem"}{aptget}{cmd}.' in progress', 1);
@@ -397,7 +398,7 @@ sub AptToDate_PollChild($) {
     my $json        = $subprocess->readFromChild();
     
     if(!defined($json)) {
-        Log3 $name, 4, "AptToDate ($name) - still waiting (". $subprocess->{lasterror} .").";
+        Log3 $name, 5, "AptToDate ($name) - still waiting (". $subprocess->{lasterror} .").";
         InternalTimer(gettimeofday()+POLLINTERVAL, "AptToDate_PollChild", $hash, 0);
         return;
     } else {
@@ -437,6 +438,7 @@ sub AptToDate_ExecuteAptGetCommand($) {
 
     my $apt                 = { };
     $apt->{lang}            = $aptget->{lang};
+    $apt->{debug}           = $aptget->{debug};
     
     if( $aptget->{host} ne 'localhost' ) {
         
@@ -481,7 +483,7 @@ sub AptToDate_GetDistribution($) {
         while (my $line = <DISTRI>) {
         
             chomp($line);
-            Log3 'AptToDate', 4, "Sub AptToDate_GetDistribution - $line";
+            print qq($line\n) if( $apt->{debug} );
             if($line =~ m#^(.*)="?(.*)"$#i or $line =~ m#^(.*)=([a-z]+)$#i) {
                 $update->{'os-release'}{'os-release_'.$1}   = $2;
                 Log3 'Update', 4, "Distribution Daten erhalten"
@@ -490,8 +492,7 @@ sub AptToDate_GetDistribution($) {
         
         close(DISTRI);
     } else {
-        die Log3 'Update', 2, "Couldn't use DISTRI: $!";
-        #die "Couldn't use DISTRI: $!\n";
+        die "Couldn't use DISTRI: $!\n";
         $update->{error}    = 'Couldn\'t use DISTRI: '.$;
     }
     
@@ -499,7 +500,7 @@ sub AptToDate_GetDistribution($) {
         while(my $line = <LOCALE>) {
         
             chomp($line);
-            Log3 'AptToDate', 4, "Sub AptToDate_GetDistribution - $line";
+            print qq($line\n) if( $apt->{debug} );
             if($line =~ m#^LANG=([a-z]+).*$#) {
                 $update->{'os-release'}{'os-release_language'}  = $1;
                 Log3 'Update', 4, "Language Daten erhalten"
@@ -509,8 +510,7 @@ sub AptToDate_GetDistribution($) {
         $update->{'os-release'}{'os-release_language'}  = 'en' if( not defined($update->{'os-release'}{'os-release_language'}) );
         close(LOCALE);
     } else {
-        die Log3 'Update', 2, "Couldn't use LOCALE: $!";
-        #die "Couldn't use APT: $!\n";
+        die "Couldn't use APT: $!\n";
         $update->{error}    = 'Couldn\'t use LOCALE: '.$;
     }
 
@@ -527,7 +527,7 @@ sub AptToDate_AptUpdate($) {
     if(open(APT, "$apt->{aptgetupdate} 2>&1 | ")) {
         while (my $line = <APT>) {
             chomp($line);
-            Log3 'AptToDate', 4, "Sub AptToDate_AptUpdate - $line";
+            print qq($line\n) if( $apt->{debug} );
             if($line =~ m#$regex{$apt->{lang}}{update}#i) {
                 $update->{'state'}  = 'done';
                 Log3 'Update', 4, "Daten erhalten";
@@ -550,8 +550,7 @@ sub AptToDate_AptUpdate($) {
         
         close(APT);
     } else {
-        die Log3 'Update', 2, "Couldn't use APT: $!";
-        #die "Couldn't use APT: $!\n";
+        die "Couldn't use APT: $!\n";
         $update->{error}    = 'Couldn\'t use APT: '.$;
     }
 
@@ -568,7 +567,7 @@ sub AptToDate_AptUpgradeList($) {
     if(open(APT, "$apt->{aptgetupgrade} 2>&1 |")) {
         while(my $line = <APT>) {
             chomp($line);
-            Log3 'AptToDate', 4, "Sub AptToDate_AptUpgradeList - $line";
+            print qq($line\n) if( $apt->{debug} );
 
             if($line =~ m#^\s+(\S+)\s+\((\S+)\s+=>\s+(\S+)\)#) {
                 my $update = {};
@@ -591,8 +590,7 @@ sub AptToDate_AptUpgradeList($) {
         
         close(APT);
     } else {
-        die Log3 'Update', 2, "Couldn't use APT: $!";
-        #die "Couldn't use APT: $!\n";
+        die "Couldn't use APT: $!\n";
         $updates->{error}    = 'Couldn\'t use APT: '.$;
     }
 
@@ -609,7 +607,7 @@ sub AptToDate_AptToUpgrade($) {
     if(open(APT, "$apt->{aptgettoupgrade} 2>&1 |")) {
         while(my $line = <APT>) {
             chomp($line);
-            Log3 'AptToDate', 4, "Sub AptToDate_AptToUpgrade - $line";
+            print qq($line\n) if( $apt->{debug} );
             
             if($line =~ m#$regex{$apt->{lang}}{upgrade}#) {
                 my $update = {};
@@ -632,8 +630,7 @@ sub AptToDate_AptToUpgrade($) {
         
         close(APT);
     } else {
-        die Log3 'Update', 2, "Couldn't use APT: $!";
-        #die "Couldn't use APT: $!\n";
+        die "Couldn't use APT: $!\n";
         $updates->{error}    = 'Couldn\'t use APT: '.$;
     }
 
@@ -688,7 +685,7 @@ sub AptToDate_WriteReadings($$) {
     readingsBeginUpdate($hash);
     
     if( $hash->{".fhem"}{aptget}{cmd} eq 'repoSync' ) {
-        readingsBulkUpdate($hash,'repoSync','fetched '.$decode_json->{'state'}) ;
+        readingsBulkUpdate($hash,'repoSync',(defined($decode_json->{'state'}) ? 'fetched '.$decode_json->{'state'} : 'fetched error') );
         $hash->{helper}{lastSync}   = AptToDate_ToDay();
     }
     
@@ -703,11 +700,13 @@ sub AptToDate_WriteReadings($$) {
     
     if( defined($decode_json->{error}) ) {
         readingsBulkUpdate($hash,'state',$hash->{".fhem"}{aptget}{cmd}.' Errors (get showErrorList)');
+        readingsBulkUpdate($hash,'state','errors');
     } elsif( defined($decode_json->{warning}) ) {
         readingsBulkUpdate($hash,'state',$hash->{".fhem"}{aptget}{cmd}.' Warnings (get showWarningList)');
+        readingsBulkUpdate($hash,'state','warnings');
     } else {
-        readingsBulkUpdate($hash,'state',(scalar keys %{$decode_json->{packages}} > 0 ? 'system updates available' : 'system is up to date') );
         
+        readingsBulkUpdate($hash,'state',(scalar keys %{$decode_json->{packages}} > 0 ? 'system updates available' : 'system is up to date') );
     }
     
     readingsEndUpdate($hash,1);
