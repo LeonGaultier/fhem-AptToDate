@@ -366,7 +366,7 @@ sub AptToDate_AsynchronousExecuteAptGetCommand($) {
     my $subprocess                  = SubProcess->new({ onRun => \&AptToDate_OnRun });
     $subprocess->{aptget}           = $hash->{".fhem"}{aptget};
     $subprocess->{aptget}{host}     = $hash->{HOST};
-    $subprocess->{aptget}{debug}    = 1 if( AttrVal($name,'verbose',0) > 3 );
+    $subprocess->{aptget}{debug}    = ( AttrVal($name,'verbose',0) > 3 ? 1 : 0 );
     my $pid                         = $subprocess->run();
 
     readingsSingleUpdate($hash,'state',$hash->{".fhem"}{aptget}{cmd}.' in progress', 1);
@@ -483,7 +483,7 @@ sub AptToDate_GetDistribution($) {
         while (my $line = <DISTRI>) {
         
             chomp($line);
-            print qq($line\n) if( $apt->{debug} );
+            print qq($line\n) if( $apt->{debug} == 1 );
             if($line =~ m#^(.*)="?(.*)"$#i or $line =~ m#^(.*)=([a-z]+)$#i) {
                 $update->{'os-release'}{'os-release_'.$1}   = $2;
                 Log3 'Update', 4, "Distribution Daten erhalten"
@@ -500,7 +500,7 @@ sub AptToDate_GetDistribution($) {
         while(my $line = <LOCALE>) {
         
             chomp($line);
-            print qq($line\n) if( $apt->{debug} );
+            print qq($line\n) if( $apt->{debug} == 1 );
             if($line =~ m#^LANG=([a-z]+).*$#) {
                 $update->{'os-release'}{'os-release_language'}  = $1;
                 Log3 'Update', 4, "Language Daten erhalten"
@@ -527,7 +527,7 @@ sub AptToDate_AptUpdate($) {
     if(open(APT, "$apt->{aptgetupdate} 2>&1 | ")) {
         while (my $line = <APT>) {
             chomp($line);
-            print qq($line\n) if( $apt->{debug} );
+            print qq($line\n) if( $apt->{debug} == 1 );
             if($line =~ m#$regex{$apt->{lang}}{update}#i) {
                 $update->{'state'}  = 'done';
                 Log3 'Update', 4, "Daten erhalten";
@@ -567,7 +567,7 @@ sub AptToDate_AptUpgradeList($) {
     if(open(APT, "$apt->{aptgetupgrade} 2>&1 |")) {
         while(my $line = <APT>) {
             chomp($line);
-            print qq($line\n) if( $apt->{debug} );
+            print qq($line\n) if( $apt->{debug} == 1 );
 
             if($line =~ m#^\s+(\S+)\s+\((\S+)\s+=>\s+(\S+)\)#) {
                 my $update = {};
@@ -607,7 +607,7 @@ sub AptToDate_AptToUpgrade($) {
     if(open(APT, "$apt->{aptgettoupgrade} 2>&1 |")) {
         while(my $line = <APT>) {
             chomp($line);
-            print qq($line\n) if( $apt->{debug} );
+            print qq($line\n) if( $apt->{debug} == 1 );
             
             if($line =~ m#$regex{$apt->{lang}}{upgrade}#) {
                 my $update = {};
