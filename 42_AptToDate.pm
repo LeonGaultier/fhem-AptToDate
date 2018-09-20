@@ -49,7 +49,7 @@ eval "use JSON;1" or $missingModul .= "JSON ";
 
 
 
-my $version = "1.0.0";
+my $version = "1.2.0";
 
 
 
@@ -153,8 +153,10 @@ sub AptToDate_Undef($$) {
         $subprocess->wait();
     }
     
+    RemoveInternalTimer($hash);
+    
     delete($modules{AptToDate}{defptr}{$hash->{HOST}});
-    Log3 $name, 3, "Sub AptToDate_Undef ($name) - delete device $name";
+    Log3 $name, 3, "Sub AptToDate ($name) - delete device $name";
     return undef;
 }
 
@@ -215,6 +217,13 @@ sub AptToDate_Notify($$) {
             or grep /^REREADCFG$/,@{$events}
             or grep /^MODIFIED.$name$/,@{$events}) and $devname eq 'global')
             or grep /^os-release_language:.(de|en)$/,@{$events} ) {
+        
+        if( ref(eval{decode_json(ReadingsVal($name,'.upgradeList',''))}) eq "HASH" ) {
+            $hash->{".fhem"}{aptget}{packages}          = eval{decode_json(ReadingsVal($name,'.upgradeList',''))}->{packages};
+        } elsif( ref(eval{decode_json(ReadingsVal($name,'.updatedList',''))}) eq "HASH" ) {
+            $hash->{".fhem"}{aptget}{updatedpackages}   = eval{decode_json(ReadingsVal($name,'.updatedList',''))}->{packages};
+        }
+
 
         if( ReadingsVal($name,'os-release_language','none') ne 'none' ) {
             AptToDate_ProcessUpdateTimer($hash);
@@ -658,11 +667,17 @@ sub AptToDate_PreProcessing($$) {
         Log3 $name, 2, "AptToDate ($name) - JSON error: $@";
         return;
     }
-    
+
     Log3 $hash, 4, "AptToDate ($name) - JSON: $json";
 
-    $hash->{".fhem"}{aptget}{packages}          = $decode_json->{packages} if( $hash->{".fhem"}{aptget}{cmd} eq 'getUpdateList' );
-    $hash->{".fhem"}{aptget}{updatedpackages}   = $decode_json->{packages} if( $hash->{".fhem"}{aptget}{cmd} eq 'toUpgrade' );
+    if( $hash->{".fhem"}{aptget}{cmd} eq 'getUpdateList' ) {
+        $hash->{".fhem"}{aptget}{packages}          = $decode_json->{packages};
+        readingsSingleUpdate($hash,'.upgradeList',$json,0);
+    } elsif( $hash->{".fhem"}{aptget}{cmd} eq 'toUpgrade' ) {
+        $hash->{".fhem"}{aptget}{updatedpackages}   = $decode_json->{packages};
+        readingsSingleUpdate($hash,'.updatedList',$json,0);
+    }
+
     
     if( defined($decode_json->{warning}) or defined($decode_json->{error}) ) {
         $hash->{".fhem"}{aptget}{'warnings'}        = $decode_json->{warning} if( defined($decode_json->{warning}) );
