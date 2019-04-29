@@ -36,7 +36,7 @@ use strict;
 use warnings;
 use FHEM::Meta;
 
-my $version = "1.99.7";
+my $version = "1.99.8";
 
 sub AptToDate_Initialize($) {
 
@@ -52,7 +52,7 @@ sub AptToDate_Initialize($) {
         "disable:1 "
       . "disabledForIntervals "
       . "upgradeListReading:1 "
-#       . "distupgrade:1 "
+      . "distupgrade:1 "
       . $readingFnAttributes;
 
     foreach my $d ( sort keys %{ $modules{AptToDate}{defptr} } ) {
@@ -107,12 +107,14 @@ BEGIN {
 
 my %regex = (
     'en' => {
-        'update'  => '^Reading package lists...$',
-        'upgrade' => '^Unpacking (\S+)\s\((\S+)\)\s+over\s+\((\S+)\)'
+        'update'        => '^Reading package lists...$',
+        'upgrade'       => '^Unpacking (\S+)\s\((\S+)\)\s+over\s+\((\S+)\)',
+        'sudoersError'  => '^sudo: no tty present and no askpass program specified'
     },
     'de' => {
-        'update'  => '^Paketlisten werden gelesen...$',
-        'upgrade' => '^Entpacken von (\S+)\s\((\S+)\)\s+über\s+\((\S+)\)'
+        'update'        => '^Paketlisten werden gelesen...$',
+        'upgrade'       => '^Entpacken von (\S+)\s\((\S+)\)\s+über\s+\((\S+)\)',
+        'sudoersError'  => '^sudo: Kein TTY vorhanden und kein »askpass«-Programm angegeben'
     }
 );
 
@@ -570,7 +572,7 @@ sub ExecuteAptGetCommand($) {
           if ( $aptget->{distupgrade} == 0 );
         $apt->{aptgettoupgrade} = 'ssh '
           . $aptget->{host}
-          . ' \'echo n | sudo apt -y -q -V dist-upgrade\''
+          . ' \'echo n | sudo apt -y -q -V full-upgrade\''
           if ( $aptget->{distupgrade} == 1 );
 
     }
@@ -582,7 +584,7 @@ sub ExecuteAptGetCommand($) {
         $apt->{aptgetupgrade}   = 'echo n | sudo apt -s -q -V upgrade';
         $apt->{aptgettoupgrade} = 'echo n | sudo apt -y -q -V upgrade'
           if ( $aptget->{distupgrade} == 0 );
-        $apt->{aptgettoupgrade} = 'echo n | sudo apt -y -q -V dist-upgrade'
+        $apt->{aptgettoupgrade} = 'echo n | sudo apt -y -q -V full-upgrade'
           if ( $aptget->{distupgrade} == 1 );
     }
 
@@ -666,7 +668,7 @@ sub AptUpdate($) {
                 Log3 'Update', 4, "Daten erhalten";
 
             }
-            elsif ( $line =~ s#^sudo: no tty present and no askpass program specified## ) {    # error
+            elsif ( $line =~ s#$regex{$apt->{lang}}{sudoersError}## ) {    # error
                 my $error = {};
                 $error->{message} = 'did you create an /etc/sudoers.d entry? Example: fhem       ALL = NOPASSWD:     /usr/bin/apt';
                 push( @{ $update->{error} }, $error );
