@@ -36,7 +36,7 @@ use strict;
 use warnings;
 use FHEM::Meta;
 
-my $version = "1.4.4";
+my $version = "1.99.7";
 
 sub AptToDate_Initialize($) {
 
@@ -52,7 +52,7 @@ sub AptToDate_Initialize($) {
         "disable:1 "
       . "disabledForIntervals "
       . "upgradeListReading:1 "
-      . "distupgrade:1 "
+#       . "distupgrade:1 "
       . $readingFnAttributes;
 
     foreach my $d ( sort keys %{ $modules{AptToDate}{defptr} } ) {
@@ -558,31 +558,31 @@ sub ExecuteAptGetCommand($) {
     if ( $aptget->{host} ne 'localhost' ) {
 
         $apt->{aptgetupdate} =
-          'ssh ' . $aptget->{host} . ' \'echo n | sudo apt-get -q update\'';
+          'ssh ' . $aptget->{host} . ' \'echo n | sudo apt -q update\'';
         $apt->{distri} = 'ssh ' . $aptget->{host} . ' cat /etc/os-release |';
         $apt->{'locale'} = 'ssh ' . $aptget->{host} . ' locale';
         $apt->{aptgetupgrade} = 'ssh '
           . $aptget->{host}
-          . ' \'echo n | sudo apt-get -s -q -V upgrade\'';
+          . ' \'echo n | sudo apt -s -q -V upgrade\'';
         $apt->{aptgettoupgrade} = 'ssh '
           . $aptget->{host}
-          . ' \'echo n | sudo apt-get -y -q -V upgrade\''
+          . ' \'echo n | sudo apt -y -q -V upgrade\''
           if ( $aptget->{distupgrade} == 0 );
         $apt->{aptgettoupgrade} = 'ssh '
           . $aptget->{host}
-          . ' \'echo n | sudo apt-get -y -q -V dist-upgrade\''
+          . ' \'echo n | sudo apt -y -q -V dist-upgrade\''
           if ( $aptget->{distupgrade} == 1 );
 
     }
     else {
 
-        $apt->{aptgetupdate}    = 'echo n | sudo apt-get -q update';
+        $apt->{aptgetupdate}    = 'echo n | sudo apt -q update';
         $apt->{distri}          = '</etc/os-release';
         $apt->{'locale'}        = 'locale';
-        $apt->{aptgetupgrade}   = 'echo n | sudo apt-get -s -q -V upgrade';
-        $apt->{aptgettoupgrade} = 'echo n | sudo apt-get -y -q -V upgrade'
+        $apt->{aptgetupgrade}   = 'echo n | sudo apt -s -q -V upgrade';
+        $apt->{aptgettoupgrade} = 'echo n | sudo apt -y -q -V upgrade'
           if ( $aptget->{distupgrade} == 0 );
-        $apt->{aptgettoupgrade} = 'echo n | sudo apt-get -y -q -V dist-upgrade'
+        $apt->{aptgettoupgrade} = 'echo n | sudo apt -y -q -V dist-upgrade'
           if ( $aptget->{distupgrade} == 1 );
     }
 
@@ -665,6 +665,13 @@ sub AptUpdate($) {
                 $update->{'state'} = 'done';
                 Log3 'Update', 4, "Daten erhalten";
 
+            }
+            elsif ( $line =~ s#^sudo: no tty present and no askpass program specified## ) {    # error
+                my $error = {};
+                $error->{message} = 'did you create an /etc/sudoers.d entry? Example: fhem       ALL = NOPASSWD:     /usr/bin/apt';
+                push( @{ $update->{error} }, $error );
+                $update->{'state'} = 'errors';
+                Log3 'Update', 4, "Error";
             }
             elsif ( $line =~ s#^E: ## ) {    # error
                 my $error = {};
@@ -1051,7 +1058,7 @@ sub ToDay() {
   <u><b>AptToDate - Retrieves apt information about Debian update state state</b></u>
   <br>
   With this module it is possible to read the apt update information from a Debian System.</br>
-  It's required to insert "fhem    ALL=NOPASSWD:   /usr/bin/apt-get" via "visudo".
+  It's required to insert "fhem    ALL=NOPASSWD:   /usr/bin/apt" via "visudo".
   <br><br>
   <a name="AptToDatedefine"></a>
   <b>Define</b>
@@ -1115,7 +1122,7 @@ sub ToDay() {
   <u><b>AptToDate - Stellt aktuelle Update Informationen von apt Debian Systemen bereit</b></u>
   <br>
   Das Modul synct alle Repositotys und stellt dann Informationen &uuml;ber zu aktualisierende Packete bereit.</br>
-  Es ist Voraussetzung das folgende Zeile via "visudo" eingef&uuml;gt wird: "fhem    ALL=NOPASSWD:   /usr/bin/apt-get".
+  Es ist Voraussetzung das folgende Zeile via "visudo" eingef&uuml;gt wird: "fhem    ALL=NOPASSWD:   /usr/bin/apt".
   <br><br>
   <a name="AptToDatedefine"></a>
   <b>Define</b>
@@ -1186,7 +1193,7 @@ sub ToDay() {
     "fhem-core",
     "Debian",
     "apt",
-    "apt-get",
+    "apt",
     "dpkg",
     "Package"
   ],
