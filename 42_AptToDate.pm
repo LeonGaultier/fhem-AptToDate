@@ -36,7 +36,7 @@ use strict;
 use warnings;
 use FHEM::Meta;
 
-my $version = "1.99.8";
+my $version = "1.4.4";
 
 sub AptToDate_Initialize($) {
 
@@ -107,14 +107,12 @@ BEGIN {
 
 my %regex = (
     'en' => {
-        'update'        => '^Reading package lists...$',
-        'upgrade'       => '^Unpacking (\S+)\s\((\S+)\)\s+over\s+\((\S+)\)',
-        'sudoersError'  => '^sudo: no tty present and no askpass program specified'
+        'update'  => '^Reading package lists...$',
+        'upgrade' => '^Unpacking (\S+)\s\((\S+)\)\s+over\s+\((\S+)\)'
     },
     'de' => {
-        'update'        => '^Paketlisten werden gelesen...$',
-        'upgrade'       => '^Entpacken von (\S+)\s\((\S+)\)\s+über\s+\((\S+)\)',
-        'sudoersError'  => '^sudo: Kein TTY vorhanden und kein »askpass«-Programm angegeben'
+        'update'  => '^Paketlisten werden gelesen...$',
+        'upgrade' => '^Entpacken von (\S+)\s\((\S+)\)\s+über\s+\((\S+)\)'
     }
 );
 
@@ -560,31 +558,31 @@ sub ExecuteAptGetCommand($) {
     if ( $aptget->{host} ne 'localhost' ) {
 
         $apt->{aptgetupdate} =
-          'ssh ' . $aptget->{host} . ' \'echo n | sudo apt -q update\'';
+          'ssh ' . $aptget->{host} . ' \'echo n | sudo apt-get -q update\'';
         $apt->{distri} = 'ssh ' . $aptget->{host} . ' cat /etc/os-release |';
         $apt->{'locale'} = 'ssh ' . $aptget->{host} . ' locale';
         $apt->{aptgetupgrade} = 'ssh '
           . $aptget->{host}
-          . ' \'echo n | sudo apt -s -q -V upgrade\'';
+          . ' \'echo n | sudo apt-get -s -q -V upgrade\'';
         $apt->{aptgettoupgrade} = 'ssh '
           . $aptget->{host}
-          . ' \'echo n | sudo apt -y -q -V upgrade\''
+          . ' \'echo n | sudo apt-get -y -q -V upgrade\''
           if ( $aptget->{distupgrade} == 0 );
         $apt->{aptgettoupgrade} = 'ssh '
           . $aptget->{host}
-          . ' \'echo n | sudo apt -y -q -V full-upgrade\''
+          . ' \'echo n | sudo apt-get -y -q -V dist-upgrade\''
           if ( $aptget->{distupgrade} == 1 );
 
     }
     else {
 
-        $apt->{aptgetupdate}    = 'echo n | sudo apt -q update';
+        $apt->{aptgetupdate}    = 'echo n | sudo apt-get -q update';
         $apt->{distri}          = '</etc/os-release';
         $apt->{'locale'}        = 'locale';
-        $apt->{aptgetupgrade}   = 'echo n | sudo apt -s -q -V upgrade';
-        $apt->{aptgettoupgrade} = 'echo n | sudo apt -y -q -V upgrade'
+        $apt->{aptgetupgrade}   = 'echo n | sudo apt-get -s -q -V upgrade';
+        $apt->{aptgettoupgrade} = 'echo n | sudo apt-get -y -q -V upgrade'
           if ( $aptget->{distupgrade} == 0 );
-        $apt->{aptgettoupgrade} = 'echo n | sudo apt -y -q -V full-upgrade'
+        $apt->{aptgettoupgrade} = 'echo n | sudo apt-get -y -q -V dist-upgrade'
           if ( $aptget->{distupgrade} == 1 );
     }
 
@@ -667,13 +665,6 @@ sub AptUpdate($) {
                 $update->{'state'} = 'done';
                 Log3 'Update', 4, "Daten erhalten";
 
-            }
-            elsif ( $line =~ s#$regex{$apt->{lang}}{sudoersError}## ) {    # error
-                my $error = {};
-                $error->{message} = 'did you create an /etc/sudoers.d entry? Example: fhem       ALL = NOPASSWD:     /usr/bin/apt';
-                push( @{ $update->{error} }, $error );
-                $update->{'state'} = 'errors';
-                Log3 'Update', 4, "Error";
             }
             elsif ( $line =~ s#^E: ## ) {    # error
                 my $error = {};
@@ -1060,7 +1051,7 @@ sub ToDay() {
   <u><b>AptToDate - Retrieves apt information about Debian update state state</b></u>
   <br>
   With this module it is possible to read the apt update information from a Debian System.</br>
-  It's required to insert "fhem    ALL=NOPASSWD:   /usr/bin/apt" via "visudo".
+  It's required to insert "fhem    ALL=NOPASSWD:   /usr/bin/apt-get" via "visudo".
   <br><br>
   <a name="AptToDatedefine"></a>
   <b>Define</b>
@@ -1124,7 +1115,7 @@ sub ToDay() {
   <u><b>AptToDate - Stellt aktuelle Update Informationen von apt Debian Systemen bereit</b></u>
   <br>
   Das Modul synct alle Repositotys und stellt dann Informationen &uuml;ber zu aktualisierende Packete bereit.</br>
-  Es ist Voraussetzung das folgende Zeile via "visudo" eingef&uuml;gt wird: "fhem    ALL=NOPASSWD:   /usr/bin/apt".
+  Es ist Voraussetzung das folgende Zeile via "visudo" eingef&uuml;gt wird: "fhem    ALL=NOPASSWD:   /usr/bin/apt-get".
   <br><br>
   <a name="AptToDatedefine"></a>
   <b>Define</b>
@@ -1195,7 +1186,7 @@ sub ToDay() {
     "fhem-core",
     "Debian",
     "apt",
-    "apt",
+    "apt-get",
     "dpkg",
     "Package"
   ],
